@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Transitionsansatz</title>
+<style>
+  :root{
+    --acc:#1F3864; --acc2:#2E75B6; --bg:#f4f7fb; --card:#fff; --line:#d0dce8;
+    --ink:#222; --mut:#555; --ok:#1e7e34; --okbg:#e6f4ea; --okb:#34a853;
+    --no:#b3261e; --nobg:#fce8e6; --nob:#ea4335;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;font-size:17px}
+  .wrap{max-width:780px;margin:0 auto;padding:28px 16px 80px}
+  h1{font-size:1.7rem;color:var(--acc);margin:0 0 6px;line-height:1.2}
+  .sub{color:var(--mut);margin:0 0 8px;font-size:.97rem}
+  .progress-wrap{position:sticky;top:0;background:var(--bg);padding:10px 0 12px;z-index:5}
+  .progress{background:#dce8f5;border-radius:20px;height:8px;overflow:hidden}
+  .progress>div{background:var(--acc2);height:100%;width:0;transition:width .3s}
+  .progress-txt{font-size:.85rem;color:var(--mut);margin-top:4px}
+  .retry-note{display:none;background:#fff8e6;border:1px solid #efd9a5;border-radius:6px;padding:10px 14px;font-size:.93rem;margin-top:14px}
+  .blk{display:flex;align-items:center;gap:12px;margin:30px 0 12px}
+  .blk span{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--acc);color:#fff;font-weight:bold;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+  .blk::after{content:"";flex:1;height:2px;background:var(--line)}
+  .q{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin-bottom:14px}
+  .qt{font-weight:bold;margin:0 0 4px}
+  .qn{color:var(--acc2);margin-right:6px}
+  .hint{font-size:.85rem;color:var(--mut);margin:0 0 12px}
+  .opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid #e0e8f0;border-radius:6px;margin-bottom:7px;cursor:pointer;transition:background .15s,border-color .15s}
+  .opt:hover{background:#eef4fb;border-color:var(--acc2)}
+  .opt input{margin-top:4px;accent-color:var(--acc2);flex-shrink:0;width:17px;height:17px}
+  .opt .ot{flex:1}
+  .opt.ok{background:var(--okbg);border-color:var(--okb)}
+  .opt.no{background:var(--nobg);border-color:var(--nob)}
+  .opt.miss{border-color:var(--okb);border-style:dashed;background:#fff}
+  .locked .opt{cursor:default}
+  .locked .opt:hover{background:inherit}
+  .tag{font-size:.78rem;font-weight:bold;padding-left:8px;white-space:nowrap;align-self:center}
+  .opt.ok .tag{color:var(--ok)} .opt.no .tag{color:var(--no)} .opt.miss .tag{color:var(--ok)}
+  .row{border:1.5px solid #e0e8f0;border-radius:6px;padding:10px 12px;margin-bottom:8px}
+  .row .rt{margin-bottom:8px}
+  .sels{display:flex;flex-wrap:wrap;gap:8px}
+  select{font:inherit;font-size:.95rem;padding:7px 8px;border:1.5px solid #b9c9da;border-radius:5px;background:#fff;color:var(--ink);min-width:230px;max-width:100%}
+  .row.ok{background:var(--okbg);border-color:var(--okb)}
+  .row.no{background:var(--nobg);border-color:var(--nob)}
+  .sol{font-size:.88rem;color:var(--no);margin-top:6px;font-weight:bold}
+  .btn{background:var(--acc2);color:#fff;border:none;padding:8px 20px;border-radius:5px;font-weight:bold;cursor:pointer;font-size:.92rem;margin-top:8px}
+  .btn:hover{background:#1F5A99}
+  .btn:disabled{background:#aaa;cursor:default}
+  .btn.sec{background:#fff;color:var(--acc2);border:1.5px solid var(--acc2)}
+  .btn.sec:hover{background:#eef4fb}
+  .msg{font-size:.88rem;color:var(--no);margin-top:6px}
+  .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:6px;font-size:.93rem}
+  .fb.show{display:block}
+  .fb.ok{background:var(--okbg)} .fb.no{background:var(--nobg)}
+  .fb .head{display:block;font-weight:bold;margin-bottom:4px}
+  .fb.ok .head{color:var(--ok)} .fb.no .head{color:var(--no)}
+  .fb p{margin:0 0 8px} .fb p:last-child{margin-bottom:0}
+  .fb table{border-collapse:collapse;margin:8px 0;background:#fff;font-size:.88rem;width:100%}
+  .fb td,.fb th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+  .fb th{background:#f1f5fa}
+  #submit{text-align:center;margin-top:30px}
+  #btnResult{background:var(--acc);font-size:1rem;padding:12px 34px}
+  #btnResult:hover{background:#162B4D}
+  #submitMsg{color:var(--no);font-size:.92rem;margin-top:8px}
+  #result{display:none;background:#fff;border:2px solid var(--acc2);border-radius:10px;padding:22px 16px;margin-top:26px;text-align:center}
+  #result h2{color:var(--acc);margin:0 0 4px;font-size:1.35rem}
+  .score{font-size:2.3rem;font-weight:bold;color:var(--acc2);margin:4px 0}
+  .blocks{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+  .bchip{border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:.9rem;background:#f8fafd}
+  .bchip b{color:var(--acc)}
+  .rmsg{font-size:1.05rem;margin:14px auto 0;max-width:560px}
+  #scene{width:100%;max-width:640px;height:auto;margin:10px auto 4px;display:block;border-radius:8px}
+  .rbtns{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:10px}
+  .hidden{display:none!important}
+  @keyframes wave{from{transform:translateX(0)}to{transform:translateX(-40px)}}
+  .waves{animation:wave 2.4s linear infinite}
+  @media (max-width:520px){.q{padding:14px}.opt{padding:9px}select{min-width:0;width:100%}h1{font-size:1.45rem}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}.waves{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Quiz: Transitionsansatz</h1>
+  <p class="sub">Wiederholung der Grundlagen des Transitionsansatzes: 15 Fragen, etwa 20 Minuten. Mit „Prüfen“ erhalten Sie nach jeder Frage eine Rückmeldung. Ihre Antworten werden nicht gespeichert.</p>
+  <div class="progress-wrap">
+    <div class="progress"><div id="bar"></div></div>
+    <div class="progress-txt" id="barTxt">0 von 15 Fragen beantwortet</div>
+  </div>
+  <div class="retry-note" id="retryNote"></div>
+  <div id="quiz"></div>
+  <div id="submit">
+    <button class="btn" id="btnResult" type="button">Ergebnis anzeigen</button>
+    <div id="submitMsg"></div>
+  </div>
+  <div id="result" aria-live="polite">
+    <h2>Ihr Ergebnis</h2>
+    <div class="score" id="scoreTxt"></div>
+    <div class="blocks" id="blockChips"></div>
+    <p class="rmsg" id="rMsg"></p>
+    <svg id="scene" viewBox="0 0 640 240" role="img" aria-label="Animation: Eine Figur springt über Steine durch einen Fluss.">
+      <defs>
+        <clipPath id="aboveWater"><rect x="0" y="0" width="640" height="173"/></clipPath>
+      </defs>
+      <rect x="0" y="0" width="640" height="240" fill="#EAF3FB"/>
+      <circle cx="585" cy="42" r="22" fill="#FFD66B"/>
+      <g fill="#fff">
+        <ellipse cx="120" cy="48" rx="34" ry="12"/><ellipse cx="145" cy="40" rx="22" ry="12"/>
+        <ellipse cx="380" cy="34" rx="30" ry="10"/><ellipse cx="402" cy="28" rx="18" ry="10"/>
+      </g>
+      <rect x="0" y="172" width="640" height="68" fill="#5B9BD5"/>
+      <g class="waves" stroke="#9DC3E6" stroke-width="2" fill="none" stroke-linecap="round">
+        <path d="M130 188 q10 -5 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0"/>
+        <path d="M150 210 q10 -5 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0"/>
+      </g>
+      <path d="M0 150 L118 150 Q135 150 140 172 L140 240 L0 240 Z" fill="#7FB77E"/>
+      <path d="M0 150 L118 150 Q135 150 140 172 L140 176 Q132 158 118 156 L0 156 Z" fill="#5E9A5D"/>
+      <path d="M640 150 L522 150 Q505 150 500 172 L500 240 L640 240 Z" fill="#7FB77E"/>
+      <path d="M640 150 L522 150 Q505 150 500 172 L500 176 Q508 158 522 156 L640 156 Z" fill="#5E9A5D"/>
+      <line x1="600" y1="150" x2="600" y2="96" stroke="#6B4226" stroke-width="4"/>
+      <path d="M602 98 L632 108 L602 118 Z" fill="#E4572E"/>
+      <g id="stones" fill="#8C8C8C">
+        <ellipse cx="185" cy="170" rx="24" ry="7"/><ellipse cx="255" cy="170" rx="24" ry="7"/>
+        <ellipse cx="325" cy="170" rx="24" ry="7"/><ellipse cx="395" cy="170" rx="24" ry="7"/>
+        <ellipse cx="460" cy="170" rx="24" ry="7"/>
+      </g>
+      <g id="splash"></g>
+      <g clip-path="url(#aboveWater)">
+        <g id="fig" transform="translate(70 150)">
+          <line x1="-4" y1="0" x2="-3" y2="-18" stroke="#1F3864" stroke-width="4" stroke-linecap="round"/>
+          <line x1="4" y1="0" x2="3" y2="-18" stroke="#1F3864" stroke-width="4" stroke-linecap="round"/>
+          <rect x="-16" y="-41" width="9" height="19" rx="3" fill="#F2A541"/>
+          <rect x="-9" y="-43" width="18" height="27" rx="7" fill="#2E75B6"/>
+          <g id="armL"><line x1="-7" y1="-38" x2="-16" y2="-24" stroke="#2E75B6" stroke-width="4" stroke-linecap="round"/></g>
+          <g id="armR"><line x1="7" y1="-38" x2="16" y2="-24" stroke="#2E75B6" stroke-width="4" stroke-linecap="round"/></g>
+          <circle cx="0" cy="-53" r="10" fill="#F4C9A8"/>
+          <path d="M-10 -55 Q-9 -65 0 -65 Q9 -65 10 -55 Q4 -60 -10 -55 Z" fill="#6B4226"/>
+          <circle cx="-3.5" cy="-53" r="1.3" fill="#222"/><circle cx="3.5" cy="-53" r="1.3" fill="#222"/>
+          <path d="M-3.5 -48.5 Q0 -46 3.5 -48.5" stroke="#222" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </g>
+      </g>
+      <g id="ring" opacity="0">
+        <ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#F28C28" stroke-width="6"/>
+        <path d="M-9 -4 L-11 3 M9 -4 L11 3" stroke="#fff" stroke-width="3"/>
+      </g>
+      <g id="fx"></g>
+    </svg>
+    <div class="rbtns">
+      <button class="btn" id="btnRetry" type="button">Falsch beantwortete Fragen wiederholen</button>
+      <button class="btn sec" id="btnReplay" type="button">Animation noch einmal</button>
+      <button class="btn sec" id="btnRestart" type="button">Neu starten</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LEVELS = ["individuelle Ebene", "interaktionale Ebene", "kontextuelle Ebene"];
+const THEORIES = [
+  "ökosystemischer Ansatz (Bronfenbrenner)",
+  "Stress- und Bewältigungsforschung (Lazarus)",
+  "Forschung zu kritischen Lebensereignissen",
+  "Familienentwicklungspsychologie (u. a. Cowan)",
+  "Salutogenese (Antonovsky)",
+  "Resilienzforschung",
+  "Ko-Konstruktion (sozialkonstruktivistisches Lernverständnis)"
+];
+
+const Q = [
+/* ---------- A ---------- */
+{ block:"A", type:"single",
+  text:"Wie bestimmen Griebel und Niesel den Begriff Transition?",
+  options:[
+    "Wechsel von einer Einrichtung in eine andere zu einem festen Stichtag",
+    "Lebensereignis, das die Bewältigung von Diskontinuitäten auf mehreren Ebenen erfordert und beschleunigte, lernintensive Wandlungsprozesse auslöst",
+    "Anpassungsleistung eines Kindes an die Anforderungen einer neuen Institution",
+    "Belastungsphase, die sich durch frühzeitige Förderung des Kindes vermeiden lässt"
+  ], correct:1,
+  fb:"<p>Zur Transition wird ein Lebensereignis durch seine Verarbeitung und Bewältigung. Die Diskontinuitäten betreffen die Person selbst, ihre Beziehungen und ihre Lebensumwelt. Der Prozess beginnt vor dem Wechsel und reicht über ihn hinaus.</p>"
+},
+{ block:"A", type:"multi",
+  text:"Welche Aussagen treffen zu?",
+  options:[
+    {t:"Transitionen sind Phasen besonders intensiven Lernens.", c:true},
+    {t:"Eine Transition kann Entwicklung anregen und zugleich belasten.", c:true},
+    {t:"Zur Transition wird ein Lebensereignis durch seine Verarbeitung und Bewältigung.", c:true},
+    {t:"Eine Transition endet mit dem ersten Tag in der neuen Einrichtung.", c:false},
+    {t:"Nur Kinder durchlaufen Transitionen, Erwachsene begleiten sie.", c:false}
+  ],
+  fb:"<p>Transitionen verdichten Lern- und Entwicklungsprozesse; der Ansatz spricht deshalb von Entwicklungsaufgaben. Die Bewältigung setzt sich über den ersten Tag hinaus fort, bis die neue Situation vertraut ist. Eltern bewältigen den Übergang ihres Kindes als eigene Transition.</p>"
+},
+{ block:"A", type:"match",
+  text:"Ordnen Sie jeden Übergang in beiden Spalten zu.",
+  hint:"Jede Zeile hat zwei Auswahlfelder.",
+  cols:[
+    {label:"normativ / nicht-normativ", choices:["normativ","nicht-normativ"]},
+    {label:"institutionell / individuell", choices:["biografisch-institutionell","biografisch-individuell"]}
+  ],
+  rows:[
+    {t:"Einschulung", a:[0,0]},
+    {t:"Wechsel in die weiterführende Schule", a:[0,0]},
+    {t:"Beginn einer Ausbildung", a:[0,0]},
+    {t:"Beginn der Pubertät", a:[0,1]},
+    {t:"Trennung der Eltern", a:[1,1]},
+    {t:"Ein Kind verliert mit sieben Jahren seinen Vater durch einen Unfall.", a:[1,1]},
+    {t:"Aufnahme in eine Wohngruppe nach einer Inobhutnahme", a:[1,0]}
+  ],
+  fb:"<p>Normative Übergänge sind gesellschaftlich erwartet, an ein Lebensalter gebunden und betreffen die meisten Menschen einer Altersgruppe. Nicht-normative Übergänge treten unerwartet oder zu einem ungewöhnlichen Zeitpunkt ein und betreffen Einzelne. Den Tod der Eltern erleben die meisten Menschen im Erwachsenenalter; mit sieben Jahren und durch einen Unfall wird er zu einem nicht-normativen Ereignis.</p>"+
+     "<p>Biografisch-institutionelle Übergänge werden von Institutionen wie Schule, Ausbildungssystem oder Jugendhilfe gerahmt, mit Stichtagen, Zuständigkeiten und Verfahren. Biografisch-individuelle Übergänge ergeben sich aus der persönlichen, familiären oder körperlichen Entwicklung.</p>"+
+     "<p>Die beiden Einteilungen beantworten verschiedene Fragen. Normativ oder nicht-normativ beschreibt, ob ein Übergang erwartbar ist, also wann er eintritt und wie viele Menschen er betrifft. Institutionell oder individuell beschreibt, wodurch er gerahmt wird. Deshalb kommen alle vier Kombinationen vor:</p>"+
+     "<table><tr><th></th><th>biografisch-institutionell</th><th>biografisch-individuell</th></tr>"+
+     "<tr><th>normativ</th><td>Einschulung</td><td>Beginn der Pubertät</td></tr>"+
+     "<tr><th>nicht-normativ</th><td>Aufnahme in eine Wohngruppe nach einer Inobhutnahme</td><td>Trennung der Eltern</td></tr></table>"+
+     "<p>Wer weiß, dass ein Übergang normativ ist, weiß damit noch nicht, ob eine Institution ihn regelt, und umgekehrt.</p>"
+},
+/* ---------- B ---------- */
+{ block:"B", type:"match",
+  text:"Ordnen Sie jedem Beitrag zum Transitionsansatz den passenden Theoriebezug zu.",
+  hint:"Jeder Theoriebezug passt zu genau einem Beitrag.",
+  cols:[{label:"Theoriebezug", choices:THEORIES}],
+  rows:[
+    {t:"Das Kind ist in mehrere Mikrosysteme eingebunden, etwa Familie, Kita und Schule. Die Beziehungen zwischen ihnen bilden das Mesosystem; Exo- und Makrosystem wirken mittelbar ein. Ein Übergang verändert Rolle und Position des Kindes in diesem Gefüge: Ein Mikrosystem kommt hinzu, das Mesosystem ordnet sich neu.", a:[0]},
+    {t:"Ob eine Veränderung überfordert, hängt davon ab, wie vorhersehbar und kontrollierbar sie erlebt wird und welche Bewältigungsmöglichkeiten verfügbar sind.", a:[1]},
+    {t:"Einschneidende Ereignisse im Lebenslauf können Entwicklung anregen oder belasten.", a:[2]},
+    {t:"Übergänge betreffen die ganze Familie. Auch Eltern verändern ihre Identität und Rolle.", a:[3]},
+    {t:"Im Mittelpunkt steht, was Menschen gesund erhält. Ein Übergang lässt sich besser bewältigen, wenn er als verstehbar, handhabbar und sinnhaft erlebt wird.", a:[4]},
+    {t:"Schutzfaktoren wie sichere Bindungen und soziale Unterstützung stärken die psychische Widerstandskraft. Gelungene Übergänge erweitern die Bewältigungskompetenz für spätere Übergänge.", a:[5]},
+    {t:"Bedeutungen und Lernprozesse entstehen im Austausch des Einzelnen mit seiner sozialen Umgebung.", a:[6]}
+  ],
+  fb:""
+},
+{ block:"B", type:"single",
+  text:"Eine Wohngruppe bereitet die Aufnahme von Emma (8) vor, die seit drei Monaten in einer Bereitschaftspflegefamilie lebt. Welche Maßnahme setzt Erkenntnisse der Stressforschung am direktesten um?",
+  options:[
+    "Emma zieht ohne Vorbesuch ein, damit sie sich nur einmal verabschieden muss.",
+    "Emma besucht die Gruppe vorab mehrmals mit ihrer Pflegemutter, lernt ihr Zimmer, ihre Bezugserzieherin und den Tagesablauf kennen und erfährt, wann sie ihre Mutter sehen wird.",
+    "Die Fachkräfte sprechen Besuchskontakte erst einige Wochen nach dem Einzug an, um Emma nicht zu überfordern.",
+    "Emma bleibt in den ersten Tagen weitgehend für sich, damit sie zur Ruhe kommt."
+  ], correct:1,
+  fb:"<p>Emma hat mit der Inobhutnahme bereits einen unvorhersehbaren Übergang erlebt. Vorbesuche, bekannte Personen und verlässliche Informationen über den Kontakt zur Mutter machen den nächsten Wechsel vorhersehbar und geben ihr ein Stück Kontrolle. Die Pflegemutter begleitet sie dabei als vertraute Person.</p>"
+},
+/* ---------- C ---------- */
+{ block:"C", type:"match",
+  text:"Ordnen Sie die Entwicklungsaufgaben des Kindes beim Übergang in die Schule der passenden Ebene zu.",
+  hint:"Wählen Sie für jede Zeile eine Ebene.",
+  cols:[{label:"Ebene", choices:LEVELS}],
+  rows:[
+    {t:"sich als Schulkind verstehen", a:[0]},
+    {t:"mit Vorfreude und Angst umgehen", a:[0]},
+    {t:"Kulturtechniken erwerben", a:[0]},
+    {t:"eine Beziehung zur Lehrkraft aufbauen", a:[1]},
+    {t:"Freundschaften aus der Kita neu gestalten oder beenden", a:[1]},
+    {t:"die Rolle als Schulkind mit ihren Rollenerwartungen übernehmen", a:[1]},
+    {t:"Familie und Schule als zwei Lebensbereiche vereinbaren", a:[2]},
+    {t:"sich auf Lehrplan, Unterrichtszeiten und Regeln einstellen", a:[2]},
+    {t:"gleichzeitig einen Umzug oder die Geburt eines Geschwisters bewältigen", a:[2]}
+  ],
+  fb:"<p>Die Übernahme der Schulkindrolle gehört zur interaktionalen Ebene, weil Rollen in Beziehungen entstehen: Lehrkraft, Mitschüler:innen und Eltern verbinden mit ihr Erwartungen und reagieren auf das Verhalten des Kindes. Weitere familiale Übergänge, die zeitgleich stattfinden, zählen zur kontextuellen Ebene; sie erhöhen die Anforderungen an die Bewältigung.</p>"
+},
+{ block:"C", type:"single",
+  text:"Frau T. sucht nach der Einschulung ihres Sohnes Kontakt zu anderen Eltern der Klasse und überlegt, wie sie mit der Klassenlehrerin zusammenarbeiten will. Wie ordnet der Transitionsansatz das ein?",
+  options:[
+    "als Unterstützungsleistung, die sie für ihr Kind erbringt",
+    "als eigene Entwicklungsaufgabe auf der interaktionalen Ebene: Sie wird zur Mutter eines Schulkindes",
+    "als kontextuelle Anforderung, die die Schule an die Familie stellt",
+    "als Unsicherheit, die Fachkräfte auffangen sollten"
+  ], correct:1,
+  fb:"<p>Eltern haben eine Doppelrolle: Sie begleiten ihr Kind und bewältigen zugleich einen eigenen Übergang zur Mutter oder zum Vater eines Schulkindes. Neue Kontakte zu anderen Eltern und die Klärung der Zusammenarbeit mit der Lehrkraft sind Entwicklungsaufgaben auf der interaktionalen Ebene.</p>"
+},
+{ block:"C", type:"multi",
+  text:"Welche Aussagen über Eltern im Übergang treffen zu?",
+  options:[
+    {t:"Eltern bewältigen den Übergang selbst und begleiten zugleich ihr Kind.", c:true},
+    {t:"Kindliche und elterliche Bewältigungsstrategien beeinflussen sich gegenseitig.", c:true},
+    {t:"Eltern entwickeln eine neue Identität als Eltern eines Schulkindes.", c:true},
+    {t:"Eltern werden zu Beteiligten, sobald ihr Kind Anpassungsschwierigkeiten zeigt.", c:false}
+  ],
+  fb:"<p>Der Übergang in die Schule ist eine gemeinsame Erfahrung der ganzen Familie. Eltern sind von Beginn an Beteiligte: Ihre Erwartungen und Bewältigungsstrategien wirken auf das Kind, und die des Kindes wirken auf sie zurück.</p>"
+},
+/* ---------- D ---------- */
+{ block:"D", type:"single",
+  text:"Warum zählt der Transitionsansatz Fachkräfte zu den Moderierenden?",
+  options:[
+    "Sie tragen die Verantwortung für das Gelingen des Übergangs.",
+    "Sie begleiten den Übergang beruflich, erleben dabei aber selbst keinen Identitätswandel und keine Erstmaligkeit.",
+    "Sie leiten die Gespräche zwischen Eltern und Schule.",
+    "Sie haben mehr Fachwissen über Übergänge als Eltern."
+  ], correct:1,
+  fb:"<p>Kinder und Eltern erleben den Übergang erstmalig und verändern dabei ihre Identität; sie bewältigen ihn aktiv. Fachkräfte begleiten Übergänge beruflich. Ihre Aufgabe ist es, die Bewältigung zu unterstützen und die Kommunikation zwischen den Beteiligten zu gestalten.</p>"
+},
+{ block:"D", type:"single",
+  text:"Ein Kind sagt zu Hause: „In der Schule darf man nicht mehr spielen.“ Die Mutter antwortet: „Da wird jetzt richtig gelernt.“ Welcher Begriff beschreibt diesen Austausch am genauesten?",
+  options:["Ko-Konstruktion","Moderation","kontextuelle Diskontinuität","Rollenerwartung der Schule"], correct:0,
+  fb:"<p>Kind und Mutter entwerfen gemeinsam ein Bild davon, was ein Schulkind ist. Zugleich zeigt sich der Identitätswandel: Das Kind grenzt „Spielen“ und „Lernen“ gegeneinander ab.</p>"
+},
+{ block:"D", type:"single",
+  text:"Paul hat nach drei Monaten in der ersten Klasse noch große Schwierigkeiten. Wie ordnet der Transitionsansatz das ein?",
+  options:[
+    "Paul war noch nicht schulreif. Eine Zurückstellung wäre angemessen gewesen.",
+    "Paul braucht gezielte Förderung seiner Vorläuferfähigkeiten.",
+    "Familie, Kita und Schule sind gemeinsam gefordert, ihr Zusammenwirken zu überprüfen und die Unterstützung anzupassen.",
+    "Es handelt sich um eine normale Anpassungsreaktion, die sich von selbst legt."
+  ], correct:2,
+  fb:"<p>Der Transitionsansatz versteht die Bewältigung des Übergangs als Kompetenz des sozialen Systems aus Familie, Kita und Schule. Schwierigkeiten des Kindes sind deshalb ein Anlass, das Zusammenwirken der Beteiligten zu überprüfen.</p>"
+},
+{ block:"D", type:"multi",
+  text:"Woran erkennt man nach dem Transitionsansatz eine gelungene Transition in die Schule?",
+  options:[
+    {t:"Das Kind fühlt sich in der Schule wohl.", c:true},
+    {t:"Es bewältigt die gestellten Anforderungen.", c:true},
+    {t:"Es nutzt die Bildungsangebote für sich.", c:true},
+    {t:"Es zeigt in den ersten Wochen keine Unsicherheit.", c:false},
+    {t:"Es beherrscht bei Schuleintritt bereits Buchstaben und Zahlen.", c:false}
+  ],
+  fb:"<p>Gelungen ist ein Übergang, wenn sich das Kind emotional, psychisch, physisch und intellektuell angemessen in der Schule zeigt. Wohlbefinden und Lernen hängen zusammen. Unsicherheit in den ersten Wochen gehört zur Bewältigung dazu.</p>"
+},
+{ block:"D", type:"single",
+  text:"Was verändert der Transitionsansatz gegenüber dem Konzept der Schulreife?",
+  options:[
+    "Er ersetzt Schuleingangstests durch Beobachtungsbögen.",
+    "Er verlagert den Blick von Merkmalen des Kindes auf die Kompetenz des sozialen Systems aus Familie, Kita und Schule.",
+    "Er verlegt die Verantwortung für den Übergang von der Kita in die Schule.",
+    "Er verschiebt den Einschulungszeitpunkt nach dem individuellen Entwicklungsstand."
+  ], correct:1,
+  fb:"<p>Das Konzept der Schulreife fragt nach Merkmalen des Kindes. Der Transitionsansatz fragt, wie Familie, Kita und Schule den Übergang gemeinsam ermöglichen. Soziale Basiskompetenzen erhalten dabei mehr Gewicht als schulnahe Vorläuferfähigkeiten.</p>"
+},
+/* ---------- E ---------- */
+{ block:"E", type:"single",
+  text:"Welche Bedeutung hat Bindung für Transitionsprozesse?",
+  options:[
+    "Sichere Bindungsbeziehungen zu Eltern und Fachkräften sind ein Schutzfaktor. In der Eingewöhnung dient die Bezugsperson als sichere Basis, bis das Kind eine Beziehung zur Fachkraft aufgebaut hat.",
+    "Sicher gebundene Kinder brauchen keine Eingewöhnung.",
+    "Das Bindungsmuster entscheidet, ob ein Übergang gelingt.",
+    "Bindung ist bei Übergängen bis zum Ende der Krippenzeit bedeutsam."
+  ], correct:0,
+  fb:"<p>Sichere Bindungsbeziehungen sind ein Schutzfaktor bei Übergängen, neben weiteren wie sozialer Unterstützung. Eingewöhnungsmodelle nutzen die vertraute Bezugsperson als sichere Basis, von der aus das Kind eine Beziehung zur Fachkraft aufbaut. Die Bedeutung von Bindung reicht über die Krippenzeit hinaus, etwa bei der Aufnahme in eine Wohngruppe.</p>"
+},
+{ block:"E", type:"single",
+  text:"Lea (17) zieht aus der Wohngruppe in eine eigene Wohnung. Welche Entwicklungsaufgabe liegt auf der kontextuellen Ebene?",
+  options:[
+    "mit dem Alleinsein am Abend umgehen",
+    "den Kontakt zu den bisherigen Betreuer:innen neu gestalten",
+    "Haushalt, Behördenpost und Ausbildung in einem neuen Alltag zusammenbringen",
+    "sich selbst als eigenständige junge Erwachsene wahrnehmen"
+  ], correct:2,
+  fb:"<p>Die kontextuelle Ebene betrifft die Lebensumwelt: Lea muss Wohnen, Ausbildung und Behördenkontakte in einem neuen Alltag verbinden. Das Alleinsein und das neue Selbstbild gehören zur individuellen Ebene, der veränderte Kontakt zu den Betreuer:innen zur interaktionalen Ebene.</p>"
+}
+];
+
+/* ---------- Hilfsfunktionen ---------- */
+const state = {};           // Fragennummer -> true | false
+const $ = s => document.querySelector(s);
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* ---------- Aufbau ---------- */
+function build(){
+  const root = $("#quiz"); let last = null;
+  Q.forEach((q,i)=>{
+    q.n = i+1;
+    if(q.block !== last){
+      const d = document.createElement("div"); d.className="blk"; d.dataset.block=q.block;
+      d.innerHTML = "<span>"+q.block+"</span>"; root.appendChild(d); last = q.block;
+    }
+    const box = document.createElement("div"); box.className="q"; box.id="q"+q.n; box.dataset.block=q.block;
+    root.appendChild(box); mount(q);
+  });
+  updateProgress();
+}
+
+function mount(q){
+  const box = $("#q"+q.n); box.classList.remove("locked");
+  let hint = q.hint || (q.type==="multi" ? "Mehrere Antworten sind richtig." : q.type==="single" ? "Eine Antwort ist richtig." : "");
+  let h = '<p class="qt"><span class="qn">'+q.n+'.</span>'+esc(q.text)+'</p><p class="hint">'+hint+'</p>';
+  if(q.type==="single"){
+    q.order = shuffle(q.options.map((_,i)=>i));
+    h += q.order.map(i=>'<label class="opt" data-i="'+i+'"><input type="radio" name="r'+q.n+'" value="'+i+'"><span class="ot">'+esc(q.options[i])+'</span><span class="tag"></span></label>').join("");
+  } else if(q.type==="multi"){
+    q.order = shuffle(q.options.map((_,i)=>i));
+    h += q.order.map(i=>'<label class="opt" data-i="'+i+'"><input type="checkbox" value="'+i+'"><span class="ot">'+esc(q.options[i].t)+'</span><span class="tag"></span></label>').join("");
+  } else {
+    q.order = shuffle(q.rows.map((_,i)=>i));
+    h += q.order.map(r=>{
+      const sels = q.cols.map((c,ci)=>'<select data-r="'+r+'" data-c="'+ci+'" aria-label="'+esc(c.label)+'"><option value="">Bitte wählen</option>'+
+        c.choices.map((ch,k)=>'<option value="'+k+'">'+esc(ch)+'</option>').join("")+'</select>').join("");
+      return '<div class="row" data-r="'+r+'"><div class="rt">'+esc(q.rows[r].t)+'</div><div class="sels">'+sels+'</div><div class="sol hidden"></div></div>';
+    }).join("");
+  }
+  h += '<button class="btn" type="button">Prüfen</button><div class="msg"></div><div class="fb"></div>';
+  box.innerHTML = h;
+  box.querySelector(".btn").addEventListener("click", ()=>check(q));
+}
+
+function check(q){
+  const box = $("#q"+q.n), msg = box.querySelector(".msg"); msg.textContent="";
+  let ok;
+  if(q.type==="single"){
+    const sel = box.querySelector("input:checked");
+    if(!sel){ msg.textContent="Bitte wählen Sie eine Antwort."; return; }
+    const v = +sel.value; ok = v===q.correct;
+    box.querySelectorAll(".opt").forEach(l=>{
+      const i=+l.dataset.i;
+      if(i===q.correct){ l.classList.add("ok"); if(v!==i) l.querySelector(".tag").textContent="richtige Antwort"; }
+      else if(i===v){ l.classList.add("no"); }
+    });
+  } else if(q.type==="multi"){
+    const checked = [...box.querySelectorAll("input:checked")].map(x=>+x.value);
+    if(!checked.length){ msg.textContent="Bitte kreuzen Sie mindestens eine Antwort an."; return; }
+    ok = q.options.every((o,i)=>checked.includes(i)===o.c);
+    box.querySelectorAll(".opt").forEach(l=>{
+      const i=+l.dataset.i, c=q.options[i].c, s=checked.includes(i), tag=l.querySelector(".tag");
+      if(s&&c){ l.classList.add("ok"); tag.textContent="richtig"; }
+      else if(s&&!c){ l.classList.add("no"); tag.textContent="trifft nicht zu"; }
+      else if(!s&&c){ l.classList.add("miss"); tag.textContent="übersehen"; }
+    });
+  } else {
+    const sels = [...box.querySelectorAll("select")];
+    if(sels.some(s=>s.value==="")){ msg.textContent="Bitte ordnen Sie alle Zeilen zu."; return; }
+    ok = true;
+    box.querySelectorAll(".row").forEach(row=>{
+      const r=+row.dataset.r, a=q.rows[r].a;
+      const vals=[...row.querySelectorAll("select")].map(s=>+s.value);
+      const rowOk = vals.every((v,ci)=>v===a[ci]);
+      row.classList.add(rowOk?"ok":"no");
+      if(!rowOk){ ok=false; const sol=row.querySelector(".sol"); sol.classList.remove("hidden");
+        sol.textContent = "Richtig: " + a.map((k,ci)=>q.cols[ci].choices[k]).join(" · "); }
+    });
+  }
+  box.querySelectorAll("input,select").forEach(x=>x.disabled=true);
+  box.classList.add("locked");
+  box.querySelector(".btn").disabled = true;
+  const fb = box.querySelector(".fb");
+  const head = ok ? "Richtig." : (q.type==="match" ? "Nicht ganz richtig. Die richtigen Zuordnungen sind angegeben." : "Nicht richtig.");
+  fb.innerHTML = '<span class="head">'+head+'</span>'+q.fb;
+  fb.className = "fb show "+(ok?"ok":"no");
+  state[q.n] = ok;
+  updateProgress();
+}
+
+function updateProgress(){
+  const n = Object.keys(state).length;
+  $("#bar").style.width = (n/Q.length*100)+"%";
+  $("#barTxt").textContent = n+" von "+Q.length+" Fragen beantwortet";
+}
+
+/* ---------- Ergebnis ---------- */
+function showResult(){
+  const open = Q.filter(q=>!(q.n in state));
+  const m = $("#submitMsg");
+  if(open.length){
+    m.textContent = open.length===1 ? "Frage "+open[0].n+" ist noch offen." : "Noch offen: Fragen "+open.map(q=>q.n).join(", ")+".";
+    $("#q"+open[0].n).scrollIntoView({behavior:"smooth",block:"start"}); return;
+  }
+  m.textContent = "";
+  document.querySelectorAll(".q,.blk").forEach(e=>e.classList.remove("hidden"));
+  $("#retryNote").style.display="none";
+  const score = Q.filter(q=>state[q.n]).length;
+  $("#scoreTxt").textContent = score+" von "+Q.length;
+  const blocks = [...new Set(Q.map(q=>q.block))];
+  $("#blockChips").innerHTML = blocks.map(b=>{
+    const qs=Q.filter(q=>q.block===b); return '<span class="bchip"><b>'+b+'</b> '+qs.filter(q=>state[q.n]).length+'/'+qs.length+'</span>';
+  }).join("");
+  let level, text;
+  if(score>=13){ level="top"; text="Übergang bewältigt: Sie sind sicher am anderen Ufer angekommen."; }
+  else if(score>=8){ level="mid"; text="Angekommen, mit etwas Wackeln. Die falsch beantworteten Fragen zeigen, wo es noch unsicher ist."; }
+  else { level="low"; text="Kurzer Tauchgang. Mit der Wiederholung der falsch beantworteten Fragen geht es ans andere Ufer."; }
+  $("#rMsg").textContent = text;
+  $("#btnRetry").classList.toggle("hidden", score===Q.length);
+  $("#result").style.display="block";
+  $("#result").scrollIntoView({behavior:"smooth",block:"start"});
+  lastLevel = level;
+  playScene(level);
+}
+
+function retryWrong(){
+  const wrong = Q.filter(q=>state[q.n]===false);
+  if(!wrong.length) return;
+  wrong.forEach(q=>{ delete state[q.n]; mount(q); });
+  Q.forEach(q=>$("#q"+q.n).classList.toggle("hidden", !!state[q.n]));
+  document.querySelectorAll(".blk").forEach(d=>{
+    d.classList.toggle("hidden", !Q.some(q=>q.block===d.dataset.block && !state[q.n]));
+  });
+  const note = $("#retryNote");
+  note.textContent = "Wiederholung: "+wrong.length+(wrong.length===1?" Frage wird":" Fragen werden")+" erneut angezeigt. Richtig beantwortete Fragen sind ausgeblendet.";
+  note.style.display="block";
+  $("#result").style.display="none";
+  sceneToken++;
+  updateProgress();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------- Animation ---------- */
+let sceneToken = 0, lastLevel = "top";
+const STONES = [185,255,325,395,460], STONE_Y = 164, BANK_Y = 150, START_X = 70, END_X = 560, SURFACE = 173;
+const fig = () => $("#fig");
+function setFig(x,y,rot){ fig().setAttribute("transform","translate("+x.toFixed(1)+" "+y.toFixed(1)+") rotate("+(rot||0).toFixed(1)+")"); }
+function arms(l,r){ $("#armL").setAttribute("transform","rotate("+l.toFixed(1)+" -7 -38)"); $("#armR").setAttribute("transform","rotate("+r.toFixed(1)+" 7 -38)"); }
+function tween(dur, fn, tok){
+  return new Promise(res=>{
+    const t0=performance.now();
+    function f(now){ if(tok!==sceneToken) return res(); const t=Math.min(1,(now-t0)/dur); fn(t); if(t<1) requestAnimationFrame(f); else res(); }
+    requestAnimationFrame(f);
+  });
+}
+const wait = (ms,tok)=>tween(ms,()=>{},tok);
+async function hop(a,b,tok){
+  await tween(430,t=>{ const x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t-42*4*t*(1-t); setFig(x,y,0); arms(-25*Math.sin(t*Math.PI), 25*Math.sin(t*Math.PI)); },tok);
+  await wait(90,tok);
+}
+async function wobble(p,dur,tok){
+  await tween(dur,t=>{ const s=Math.sin(t*Math.PI*7); setFig(p.x,p.y,13*s*(1-t*0.2)); arms(100+40*s, -100+40*s); },tok);
+}
+function clearFx(){ $("#fx").innerHTML=""; $("#splash").innerHTML=""; $("#ring").setAttribute("opacity","0"); }
+const NS="http://www.w3.org/2000/svg";
+function mk(tag,attrs,parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); parent.appendChild(e); return e; }
+
+async function confetti(x,y,tok){
+  const cols=["#E4572E","#F2A541","#2E75B6","#34a853","#9B5DE5","#FFD66B"];
+  const ps=[...Array(70)].map(()=>({x:x,y:y-50,vx:(Math.random()-0.5)*260,vy:-(140+Math.random()*220),r:Math.random()*360,vr:(Math.random()-0.5)*720,
+    e:mk("rect",{width:6,height:10,fill:cols[Math.floor(Math.random()*cols.length)]},$("#fx"))}));
+  let prev=0;
+  await tween(2600,t=>{ const dt=(t-prev)*2.6; prev=t;
+    ps.forEach(p=>{ p.vy+=380*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.r+=p.vr*dt;
+      p.e.setAttribute("transform","translate("+p.x.toFixed(1)+" "+p.y.toFixed(1)+") rotate("+p.r.toFixed(0)+")"); p.e.setAttribute("opacity",(1-t*t).toFixed(2)); });
+  },tok);
+}
+async function splash(x,tok){
+  const g=$("#splash");
+  const rings=[0,1,2].map(i=>mk("ellipse",{cx:x,cy:SURFACE,rx:4,ry:2,fill:"none",stroke:"#fff","stroke-width":2.5},g));
+  const drops=[...Array(9)].map(()=>({vx:(Math.random()-0.5)*120,vy:-(90+Math.random()*90),x:x,y:SURFACE,e:mk("circle",{r:3,fill:"#DDEBF7"},g)}));
+  let prev=0;
+  await tween(900,t=>{ const dt=(t-prev)*0.9; prev=t;
+    rings.forEach((r,i)=>{ const k=Math.max(0,t-i*0.15); r.setAttribute("rx",(4+k*60).toFixed(1)); r.setAttribute("ry",(2+k*9).toFixed(1)); r.setAttribute("opacity",(1-k).toFixed(2)); });
+    drops.forEach(d=>{ d.vy+=400*dt; d.x+=d.vx*dt; d.y+=d.vy*dt; d.e.setAttribute("cx",d.x.toFixed(1)); d.e.setAttribute("cy",Math.min(d.y,SURFACE+4).toFixed(1)); d.e.setAttribute("opacity",(1-t).toFixed(2)); });
+  },tok);
+}
+
+function finalPose(level){
+  clearFx();
+  if(level==="low"){ setFig(STONES[2]+6,216,0); arms(0,0); const r=$("#ring"); r.setAttribute("transform","translate("+(STONES[2]+6)+" "+SURFACE+")"); r.setAttribute("opacity","1"); }
+  else { setFig(END_X,BANK_Y,0); level==="top" ? arms(115,-115) : arms(0,-115); }
+}
+
+async function playScene(level){
+  const tok = ++sceneToken;
+  clearFx(); setFig(START_X,BANK_Y,0); arms(0,0);
+  if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){ finalPose(level); return; }
+  await wait(500,tok);
+  const pts=[{x:START_X,y:BANK_Y}].concat(STONES.map(x=>({x:x,y:STONE_Y}))).concat([{x:END_X,y:BANK_Y}]);
+  const stopAt = level==="low" ? 3 : level==="mid" ? 5 : pts.length-1;
+  for(let i=0;i<stopAt;i++){ await hop(pts[i],pts[i+1],tok); if(tok!==sceneToken) return; }
+  const p = pts[stopAt];
+  if(level==="top"){
+    await tween(350,t=>arms(115*t,-115*t),tok);
+    const c = confetti(p.x,p.y,tok);
+    for(let j=0;j<3;j++){ await tween(420,t=>setFig(p.x,p.y-28*4*t*(1-t),0),tok); }
+    await c;
+  } else if(level==="mid"){
+    await wobble(p,1300,tok);
+    arms(0,0); setFig(p.x,p.y,0);
+    await hop(p,pts[6],tok);
+    for(let j=0;j<3;j++){ await tween(500,t=>arms(0,-115+22*Math.sin(t*Math.PI*2)),tok); }
+  } else {
+    await wobble(p,1400,tok);
+    const sp = splash(p.x+6,tok);
+    await tween(420,t=>{ setFig(p.x+6*t,p.y+70*t*t,45*t); arms(120,-120); },tok);
+    await sp; await wait(500,tok);
+    const r=$("#ring");
+    arms(0,0);
+    await tween(700,t=>{ const y=250-34*t; setFig(p.x+6,y,0); r.setAttribute("transform","translate("+(p.x+6)+" "+SURFACE+")"); r.setAttribute("opacity",t.toFixed(2)); },tok);
+    const bubbles=[...Array(5)].map((_,i)=>mk("circle",{cx:p.x+20+i*3,cy:SURFACE-4,r:2+i%3,fill:"none",stroke:"#fff","stroke-width":1.5},$("#fx")));
+    await tween(3200,t=>{ const b=3*Math.sin(t*Math.PI*6); setFig(p.x+6,216+b,0); r.setAttribute("transform","translate("+(p.x+6)+" "+(SURFACE+b)+")");
+      bubbles.forEach((e,i)=>{ const k=(t*1.6+i*0.2)%1; e.setAttribute("cy",(SURFACE-8-k*50).toFixed(1)); e.setAttribute("cx",(p.x+22+i*4+4*Math.sin(k*9)).toFixed(1)); e.setAttribute("opacity",(1-k).toFixed(2)); }); },tok);
+    $("#fx").innerHTML="";
+  }
+}
+
+/* ---------- Start ---------- */
+build();
+$("#btnResult").addEventListener("click", showResult);
+$("#btnRetry").addEventListener("click", retryWrong);
+$("#btnReplay").addEventListener("click", ()=>playScene(lastLevel));
+$("#btnRestart").addEventListener("click", ()=>location.reload());
+</script>
+</body>
+</html>
